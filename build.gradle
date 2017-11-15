@@ -18,6 +18,11 @@ group = 'de.haw'
 version = '1.0'
 sourceCompatibility = 1.8
 
+jar {
+	baseName = 'vsp_abq944'
+	version =  ''
+}
+
 repositories {
 	mavenCentral()
 }
