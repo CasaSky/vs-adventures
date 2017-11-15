@@ -1,0 +1,4 @@
+rootProject.name = 'vs-adventures'
+
+include "main"
+
