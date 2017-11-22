@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import de.haw.vsadventures.entities.*;
 import de.haw.vsadventures.utils.ApacheClient;
 
+import de.haw.vsadventures.utils.UDPClient;
 import org.springframework.http.*;
 import org.springframework.http.client.support.BasicAuthorizationInterceptor;
 import org.springframework.web.client.HttpClientErrorException;
@@ -19,7 +20,7 @@ public class Client {
 
     private RestTemplate restTemplate;
 
-    private String url = "http://172.19.0.3:5000"; //blackboard
+        private String url = "http://172.19.0.3:5000"; //blackboard
     private String quest1 = url+"/blackboard/quests/1";
     private String deliveries = quest1+"/deliveries";
     private String login = url+"/login";
