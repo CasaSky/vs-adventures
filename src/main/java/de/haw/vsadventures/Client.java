@@ -6,6 +6,7 @@ import de.haw.vsadventures.entities.*;
 import de.haw.vsadventures.utils.ApacheClient;
 
 import de.haw.vsadventures.utils.UDPClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.http.client.support.BasicAuthorizationInterceptor;
 import org.springframework.web.client.HttpClientErrorException;
@@ -18,9 +19,10 @@ import java.util.Scanner;
 
 public class Client {
 
+    @Autowired
     private RestTemplate restTemplate;
 
-        private String url = "http://172.19.0.3:5000"; //blackboard
+    private String url = "http://172.19.0.7:5000"; //blackboard
     private String quest1 = url+"/blackboard/quests/1";
     private String deliveries = quest1+"/deliveries";
     private String login = url+"/login";
@@ -33,6 +35,10 @@ public class Client {
     private String loginToken;
 
     private Gson g = new Gson();
+
+    public Client() {
+        this.restTemplate = new RestTemplate();
+    }
 
     public Client(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -117,7 +123,9 @@ public class Client {
         String questToken = ac.post(hostQuest+resource,loginToken,answer,"token");
 
         // finish!
-        String finalMessage = ac.post(deliveries, loginToken, questToken, "message");
+        firstTask = firstTask.substring(1); // remove slash
+        String request = "{\"tokens\":{\""+firstTask+"\":\""+questToken+"\"}}";
+        String finalMessage = ac.post(deliveries, loginToken, request, "message");
         System.out.println("Boss said: "+finalMessage);
         System.out.println("Quest finished!");
         System.out.println("__________________");
