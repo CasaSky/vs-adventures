@@ -1,11 +1,14 @@
 package de.haw.vsadventures;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
 
 import de.haw.vsadventures.entities.*;
 import de.haw.vsadventures.utils.ApacheClient;
 
 import de.haw.vsadventures.utils.UDPClient;
+import org.apache.log4j.Logger;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.http.client.support.BasicAuthorizationInterceptor;
@@ -19,7 +22,6 @@ import java.util.Scanner;
 
 public class Client {
 
-    @Autowired
     private RestTemplate restTemplate;
 
     private String url = "http://172.19.0.7:5000"; //blackboard
@@ -35,6 +37,10 @@ public class Client {
     private String loginToken;
 
     private Gson g = new Gson();
+
+    private ApacheClient ac = new ApacheClient();
+
+    private Logger logger = Logger.getLogger(Client.class);
 
     public Client() {
         this.restTemplate = new RestTemplate();
@@ -59,12 +65,12 @@ public class Client {
             HttpEntity<String> entity = new HttpEntity<>(userJson, headers);
         try {
 
-            ResponseEntity<String> loginResponse = restTemplate
+            restTemplate
                     .exchange(users, HttpMethod.POST, entity, String.class);
-            System.out.println("Registration was succesfull!");
+            logger.info("Registration was succesfull!");
         } catch (HttpClientErrorException | HttpServerErrorException httpClientOrServerExc) {
 
-                System.out.println("Register failed!");
+                logger.error("Register failed!");
                 throw new RuntimeException(httpClientOrServerExc);
         }
     }
@@ -83,10 +89,10 @@ public class Client {
             ResponseEntity<LoginResponse> response = restTemplate.exchange(login, HttpMethod.GET, null, LoginResponse.class);
             LoginResponse restCall = response.getBody();
             loginToken = restCall.getToken();
-            System.out.println("This is your login token: "+ loginToken);
+            logger.info("This is your login token: "+ loginToken);
         } catch (HttpStatusCodeException exception) {
 
-            System.out.println("Youre cridentials are wrong, please verify.");
+            logger.error("Youre cridentials are wrong, please verify.");
         }
     }
 
@@ -99,19 +105,16 @@ public class Client {
         // looks for resource and location
         ResponseEntity<Task> responseTask = restTemplate.getForEntity(url+firstTask,Task.class, Task.class);
         TaskPosition taskPosition = responseTask.getBody().getObject();
-        System.out.println("Boss said: "+taskPosition.getDescription()); // Anzeige von task Description
+        logger.info("Boss said: "+taskPosition.getDescription()); // Anzeige von task Description
         String resource = taskPosition.getResource(); // resource
         String location = taskPosition.getLocation(); // location
 
         // looks for quest host
         ResponseEntity<Location> responseMap = restTemplate.getForEntity(url+location,Location.class, Location.class);
         LocationPosition locationPosition = responseMap.getBody().getObject();
-        System.out.println("The game is taking you to the "+locationPosition.getName()+" ..."); // Anzeige von Location name
+        logger.info("The game is taking you to the "+locationPosition.getName()+" ..."); // Anzeige von Location name
         String hostQuest = "http://"+locationPosition.getHost(); // host of quest
 
-
-        // Alternative zum Resttemplate, wegen Kopfschmerzen bei Eingabe von Token Auth Header --> Implementierung unsauber, Doku schlecht.
-        ApacheClient ac = new ApacheClient();
 
         // looks for quest message
         String questMessage = ac.get(hostQuest+resource, loginToken, "message");
@@ -123,12 +126,42 @@ public class Client {
         String questToken = ac.post(hostQuest+resource,loginToken,answer,"token");
 
         // finish!
+        String finalMessage = deliverQuestToken(firstTask, questToken);
+        logger.info("Boss said: "+finalMessage);
+        logger.info("Quest finished!");
+        logger.info("__________________");
+    }
+
+    private String deliverQuestToken(String firstTask, String questToken) {
+
         firstTask = firstTask.substring(1); // remove slash
-        String request = "{\"tokens\":{\""+firstTask+"\":\""+questToken+"\"}}";
-        String finalMessage = ac.post(deliveries, loginToken, request, "message");
-        System.out.println("Boss said: "+finalMessage);
-        System.out.println("Quest finished!");
-        System.out.println("__________________");
+
+        JSONObject tokenValue = new JSONObject();
+        tokenValue.put(firstTask, questToken);
+
+        JSONObject tokensObject = new JSONObject();
+        tokensObject.put("tokens", tokenValue);
+        String request = tokensObject.toString();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        restTemplate.getInterceptors().add(
+                new BasicAuthorizationInterceptor(user.getName(), user.getPassword()));
+
+        HttpEntity<String> entity = new HttpEntity<>(request, headers);
+
+
+        ResponseEntity<ObjectNode> response;
+        String message = null;
+        try {
+            response = restTemplate.exchange(deliveries, HttpMethod.POST, entity, ObjectNode.class);
+            message = response.getBody().get("message").asText();
+        } catch (Exception e) {
+            message = e.getMessage();
+            logger.error(message);
+        }
+        return message;
     }
 
     private String lookForFirstTask() {
