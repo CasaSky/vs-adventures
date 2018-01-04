@@ -1,5 +1,7 @@
 package de.haw.vsadventures;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
 
@@ -41,6 +43,17 @@ public class Client {
     private ApacheClient ac = new ApacheClient();
 
     private Logger logger = Logger.getLogger(Client.class);
+
+    private String heroUrl = "172.19.0.35:8080/hero";
+
+    String taskText = null;
+    String resourceText = null;
+    String methodText = null;
+    String dataText = null;
+    String callbackText = null;
+    String messageText = null;
+    ObjectMapper mapper = new ObjectMapper();
+
 
     public Client() {
         this.restTemplate = new RestTemplate();
@@ -173,6 +186,157 @@ public class Client {
         return tasksUrls.get(0);
     }
 
+    public void hiring() {
+
+        String hiringUrl = heroUrl + "/hiring";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        String groupText = null;
+        String questText = null;
+        String messageText = null;
+        try {
+            groupText = mapper.writeValueAsString("group");
+            questText = mapper.writeValueAsString("quest");
+            messageText = mapper.writeValueAsString("message");
+        } catch (JsonProcessingException e) {
+        }
+
+        System.out.println("Enter your group number:");
+        String groupUrl = url + "/taverna/groups/" + scanner.next();
+        System.out.println("Enter the quest number:");
+        String questUri = "/quest/" + scanner.next();
+        System.out.println("Enter your message:");
+        String message = scanner.next();
+
+        String post = "{" + groupText + ":" + groupUrl + ","+
+                questText + ":" + questUri + ","+
+                messageText + ":" + message + "}";
+
+        HttpEntity<String> entity = new HttpEntity<>(post, headers);
+
+
+        try {
+
+            ResponseEntity<Object> response = restTemplate.exchange(hiringUrl, HttpMethod.POST, entity, Object.class);
+
+        } catch (HttpStatusCodeException exception) {
+
+        }
+    }
+
+    private void initAssignment() {
+
+        try {
+            taskText = mapper.writeValueAsString("task");
+            resourceText = mapper.writeValueAsString("resource");
+            methodText = mapper.writeValueAsString("method");
+            dataText = mapper.writeValueAsString("data");
+            callbackText = mapper.writeValueAsString("callback");
+            messageText = mapper.writeValueAsString("message");
+        } catch (JsonProcessingException e) {
+        }
+    }
+
+    public void assignment() {
+
+        String assignmentUrl = heroUrl + "/assignment";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+       initAssignment();
+
+        System.out.println("Enter your task number:");
+        String taskUrl = "/blackboard/tasks/" + scanner.next();
+        System.out.println("Enter the resource name:");
+        String resource = "/" + scanner.next();
+        System.out.println("Enter the method type:");
+        String method = "/" + scanner.next();
+        System.out.println("Enter your callback address url:");
+        String callbackUrl = scanner.next();
+        System.out.println("Enter your message:");
+        String message = scanner.next();
+
+        String post = "{" + taskText + ":" + taskUrl + ","+
+                resourceText + ":" + resource + "," +
+                methodText + ":" + method + "," +
+                dataText + ":" +""+ "," +
+                callbackText + ":"+ callbackUrl+ ","+
+                messageText + ":" + message +"}";
+
+        HttpEntity<String> entity = new HttpEntity<>(post, headers);
+
+
+        try {
+
+            ResponseEntity<Object> response = restTemplate.exchange(assignmentUrl, HttpMethod.POST, entity, Object.class);
+
+        } catch (HttpStatusCodeException exception) {
+
+        }
+    }
+
+    public void election() {
+
+        String electionUrl = heroUrl + "/election";
+        ObjectMapper mapper = new ObjectMapper();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+
+        String algorithmText = null;
+        String payloadText = null;
+        String userText = null;
+        String jobText = null;
+
+        try {
+            algorithmText = mapper.writeValueAsString("task");
+            payloadText = mapper.writeValueAsString("resource");
+            userText = mapper.writeValueAsString("method");
+            jobText = mapper.writeValueAsString("");
+        } catch (JsonProcessingException e) {
+        }
+
+        initAssignment();
+
+        System.out.println("Enter your task number:");
+        String taskUrl = "/blackboard/tasks/" + scanner.next();
+        System.out.println("Enter the resource name:");
+        String resource = "/" + scanner.next();
+        System.out.println("Enter the method type:");
+        String method = "/" + scanner.next();
+        System.out.println("Enter your callback address url:");
+        String callbackUrl = scanner.next();
+        System.out.println("Enter your message:");
+        String message = scanner.next();
+
+        String post = "{" + algorithmText + ":" + taskUrl + ","+
+                payloadText + ":" + resource + "," +
+                userText + ":" + method + "," +
+                jobText + ":" +"{" +
+                                taskText +":" + taskUrl+","+
+                                resourceText + ":" + resource+","+
+                                methodText + ":" + method+","+
+                                dataText + ":" + ""+","+
+                                callbackText + ":" + callbackUrl+","+
+                                messageText  + ":" + message
+                                + "}," +
+                messageText + ":" + message +"}";
+
+        HttpEntity<String> entity = new HttpEntity<>(post, headers);
+
+
+        try {
+
+            ResponseEntity<Object> response = restTemplate.exchange(electionUrl, HttpMethod.POST, entity, Object.class);
+
+        } catch (HttpStatusCodeException exception) {
+
+        }
+    }
+
+
+
     public void menu() throws Exception {
 
         String input="";
@@ -184,6 +348,10 @@ public class Client {
             System.out.println("1: Play first quest");
             System.out.println("2: Login");
             System.out.println("3: Register");
+            System.out.println("4: Hiring");
+            System.out.println("5: Assignment");
+            System.out.println("6: Election");
+
             System.out.println("q: Quit");
             input = scanner.next();
 
@@ -194,6 +362,9 @@ public class Client {
                     else {playFirstQuest();} break;
                 case "2": login(); break;
                 case "3": register(); break;
+                case "4": hiring(); break;
+                case "5": assignment(); break;
+                case "6": election(); break;
                 case "q": break;
             }
         }
